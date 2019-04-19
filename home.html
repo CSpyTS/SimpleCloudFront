@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>首页</title>
+		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+	</head>
+	<body>
+		<div id="main-frame">
+			<p>{{msg}}</p>
+			<p v-text="msg"></p>
+			<p v-html="msgHtml"></p>
+			<!-- v-cloak 解决闪烁问题 -->
+			
+			<!-- v-bind:title=""  简写 :title -->
+			<!-- v-on:事件 简写@事件 -->
+			<!-- v-on:事件.修饰符 可以添加额外效果，可以串联。 比如stop停止冒泡 prevent阻止默认行为 -->
+			<input type="button" value="按钮" :title="myTitle + '123'" v-on:click="show"/>
+			
+			
+			<!-- v-model 双向数据绑定 -->
+			
+			<!-- :class='['', flag?'active':'']' 三元表达式，flag为属性 -->
+			<!-- :class='['', {'active': flag}]' 传入对象，键为true，则应用 -->
+			<!-- :class="{属性键值对}" -->
+			
+			<!-- :style="{color: red, 'font-weight': 10}" 内联样式，属性中有-需要加引号。可以使用数组 -->
+			
+			<p v-for="item in list">{{item}}</p>
+			<p v-for="(item, i) in list">索引值-{{i}}-{{item}}</p>
+			
+			<!-- 在组件中指定key -->
+			<p v-for="(item, i) in complexList" :key="item.id">索引值-{{i}}-{{item.name}}</p>
+			
+			<!-- 遍历对象 -->
+			<p v-for="(item, p) in user">{{p}}:{{item}}</p>
+			
+			<!-- 从1开始 -->
+			<p v-for="(item) in 10">{{item}}</p>
+			
+			<!-- v-if 每次都会创建删除元素，v-show则是隐藏 -->
+			<p v-if="true">1</p>
+			<p v-show="true">1</p>
+			
+			
+
+
+
+
+			
+			
+			
+		</div>
+		<script>
+			new Vue({
+				el: '#main-frame',
+				data: {
+					msg: "hello world!",
+					msgHtml: "<h1>Hello World!</h1>",
+					myTitle: "title",
+					list: [1, 2, 3, 4],
+					complexList: [
+						{id: 1, name: 'ss1'},
+						{id: 2, name: '221'},
+						{id: 3, name: '2312'}
+					],
+					user: {
+						id: 1,
+						name: 'Tony'
+					}
+				},
+				methods: {
+					show: function () {
+						alert("s")
+					},
+					lang() {
+						// 效果同上
+						// () => {} 箭头函数中,this指向外部对象
+						// 在方法中,需要引用vue对象的属性和方法需要使用this.
+					}
+				}
+				
+			})
+		</script>
+	</body>
+</html>

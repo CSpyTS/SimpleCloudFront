@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>简易云新版</title>
+		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+		<style>
+			:root {
+				--sidebar: 200px;
+				--navbar: 80px;
+			}
+
+			html,
+			body {
+				font-family: "黑体";
+				height: 100%;
+				margin: 0px;
+				padding: 0px;
+			}
+
+
+
+			#nav {
+				height: var(--navbar);
+
+			}
+
+			#nav ul {
+				display: inline-block;
+				float: left;
+				margin: 0px;
+				padding: 0px;
+			}
+
+			#nav ul li {
+				list-style: none;
+				float: left;
+			}
+
+			#nav ul li+li {
+				padding-left: 30px;
+			}
+
+			#nav ul li a {
+				text-decoration: none;
+				font-weight: 400;
+				font-size: 20px;
+				color: black;
+			}
+
+			#logoBox {
+				height: 100%;
+				width: 300px;
+				float: left;
+
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+			}
+
+			#logo {
+				display: inline-block;
+				height: 50px;
+				width: auto;
+			}
+
+			#main {
+				height: calc(100% - var(--navbar));
+			}
+
+			#main div {
+				float: left;
+			}
+
+			#left {
+				width: var(--sidebar);
+				height: 100%;
+				position: relative;
+			}
+
+			#left ul {
+				margin: 0px;
+				padding: 0px;
+			}
+
+			#left ul li {
+				list-style: none;
+				width: 100%;
+				background: #007BFF;
+			}
+
+
+			#left ul li a {
+				text-decoration: none;
+				font-size: 25px;
+				padding-left: 40px;
+				line-height: 50px;
+
+			}
+
+			#right {
+				width: calc(100% - var(--sidebar));
+				height: 100%;
+
+			}
+
+			#right div {
+				width: 100%;
+				height: 100%;
+				/* overflow-y: scroll; */
+			}
+
+
+			#storage-panel {
+				position: absolute;
+				width: 100%;
+				height: 100px;
+				background: red;
+				bottom: 40px;
+			}
+			
+			table {
+				width: 100%;
+			}
+			#table-body {
+				overflow-y: scroll;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="nav">
+			<div id="logoBox">
+				<img id="logo" src="img/logo.png" />
+			</div>
+
+			<ul>
+				<li><a href="#">网盘</a></li>
+				<li><a href="#">分享</a></li>
+			</ul>
+		</div>
+		<div id="main">
+			<div id="left">
+				<ul>
+					<li><a href="javascript:;" @click="navClick('allFile')">全部文件</a></li>
+					<li><a href="javascript:;" @click="navClick('image')">图片</a></li>
+					<li><a href="javascript:;" @click="navClick('video')">视频</a></li>
+					<li><a href="javascript:;" @click="navClick('text')">文档</a></li>
+					<li><a href="javascript:;" @click="navClick('music')">音乐</a></li>
+					<li><a href="javascript:;" @click="navClick('other')">其他</a></li>
+				</ul>
+
+				<div id="storage-panel">
+
+				</div>
+			</div>
+			<div id="right">
+				<div id="allFile" v-show="itemChoosed.allFile">
+
+					<table id="table-head">
+						<colgroup>
+							<col class="td-checkbox" style="width: 5%;"/>
+							<col class="td-file-name" style="width: 45%;"/>
+							<col class="td-file-size" style="width: 10%;"/>
+							<col class="td-file-type" style="width: 10%;"/>
+							<col class="td-modify-time" style="width: 30%;"/>
+						</colgroup>
+						
+						<thead>
+							<tr>
+								<td><input type="checkbox" @click="chooseAll" /></td>
+								<td>文件名</td>
+								<td>大小</td>
+								<td>文件类型</td>
+								<td>修改日期</td>
+							</tr>
+						</thead>
+					</table>
+					<div id="table-body">
+						<input type="text" :value="checkedItems" />
+						<table>
+							<colgroup>
+								<col class="td-checkbox" style="width: 5%;"/>
+								<col class="td-file-name" style="width: 45%;"/>
+								<col class="td-file-size" style="width: 10%;"/>
+								<col class="td-file-type" style="width: 10%;"/>
+								<col class="td-modify-time" style="width: 30%;"/>
+							</colgroup>
+							
+							<tbody>
+								<tr v-for="(item, key) in userList" @mouseover="trHover($event)" @mouseout="trOut($event)">
+									<td><input type="checkbox" :value="key" v-model="checkedItems"/></td>
+									<td v-text="item.filename"></td>
+									<td v-text="getFileSize(item.size)"></td>
+									<td v-text="getFileType(item.type)"></td>
+									<td v-text="getFileModifyTime(item.gmtModify)"></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div id="image" v-show="itemChoosed.image">image</div>
+				<div id="video" v-show="itemChoosed.video">video</div>
+				<div id="text" v-show="itemChoosed.text">text</div>
+				<div id="music" v-show="itemChoosed.music">music</div>
+				<div id="other" v-show="itemChoosed.other">other</div>
+			</div>
+		</div>
+
+
+		<script>
+			var sevenDaysAgoTimestamp = new Date().getTime() - 7 * 24 * 60 * 60 * 1000;
+
+			document.getElementsByTagName('body').height = document.body.offsetHeight;
+
+			var mainVue = new Vue({
+				el: '#main',
+				data: {
+					itemChoosed: {
+						allFile: true,
+						image: false,
+						video: false,
+						text: false,
+						music: false,
+						other: false
+					},
+					userList: '',
+					checkedItems: [],
+					chooseOrClear: true
+				},
+				methods: {
+					navClick(item) {
+						// 如果当前导航栏未被选中
+						if (!this.itemChoosed[key]) {
+							for (var key in this.itemChoosed) {
+								this.itemChoosed[key] = false;
+								console.log(key + "-" + this.itemChoosed[key])
+							}
+							this.itemChoosed[item] = true;
+						}
+
+
+
+					},
+					getFileType(fullName) {
+						if (fullName.startsWith("文件夹")) {
+							return "文件夹";
+						}
+						if (fullName.startsWith("video")) {
+							return "视频";
+						}
+						if (fullName.startsWith("audio")) {
+							return "音乐";
+						}
+						if (fullName.startsWith("image")) {
+							return "图片";
+						}
+						return "未知格式";
+					},
+					getFileSize(size) {
+						var units = ['b', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb'];
+						var index = 0;
+						while (size / 1024 > 1) {
+							index++;
+							size /= 1024;
+						}
+						return (index === 0 ? size : size.toFixed(2)) + units[index];
+					},
+					getFileModifyTime(timestamp) {
+						if (timestamp < sevenDaysAgoTimestamp) {
+							return "7天前";
+						} else {
+							var date = new Date(timestamp);
+							return date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日" +
+								" " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+						}
+					},
+					trHover(event) {
+						event.currentTarget.style.background='blue';
+					},
+					trOut(event) {
+						event.currentTarget.style.background='white';
+					},
+					countChoosed() {
+						console.log(this.checkedItems)
+					},
+					chooseAll() {
+						this.checkedItems = []
+
+						if (this.chooseOrClear) {
+							for(var i = 0; i < this.userList.length; i++) {
+								this.checkedItems.push(i)
+							}
+							this.chooseOrClear = false;
+							return;
+						}
+						this.chooseOrClear = true;
+						
+					}
+
+
+
+
+				}
+			})
+
+			var url = 'http://localhost:8080/SimpleCloud_war_exploded/getFileList';
+			axios.get(url, {
+				params: {
+					path: 'D:\\SimpleCloud\\users\\CSpy\\资源\\视频'
+				}
+			}).then(function(response) {
+				console.log(response)
+				mainVue.userList = response.data;
+				console.log(mainVue.userList)
+			})
+
+
+			function setFileList(fileList) {
+				fileList = $.parseJSON(fileList)
+				var fileTable = $("#file-table-div tbody");
+				fileTable.empty();
+				for (var i = 0; i < fileList.length; i++) {
+					var fileItem = fileList[i];
+					var fileType = getFileType(fileItem.type);
+					var fileSize = fileType === '文件夹' ? "" : getFileSize(fileItem.size);
+					var modifyTime = getFileModifyTime(fileItem.gmtModify);
+
+					var tr = '<tr><td>' + fileItem.filename + '</td><td>' + fileSize + '</td><td>' + fileType + '</td><td>' +
+						modifyTime + '</td></tr>';
+					fileTable.append($(tr));
+				}
+			}
+
+
+			// 			function getFileType(fullName) {
+			// 				if (fullName.startsWith("文件夹")) {
+			// 					return "文件夹";
+			// 				}
+			// 				if (fullName.startsWith("video")) {
+			// 					return "视频";
+			// 				}
+			// 				if (fullName.startsWith("audio")) {
+			// 					return "音乐";
+			// 				}
+			// 				if (fullName.startsWith("image")) {
+			// 					return "图片";
+			// 				}
+			// 				return "未知格式";
+			// 			}
+
+			// 			function getFileSize(size) {
+			// 				var units = ['b', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb'];
+			// 				var index = 0;
+			// 				while (size / 1024 > 1) {
+			// 					index++;
+			// 					size /= 1024;
+			// 				}
+			// 				return (index === 0 ? size : size.toFixed(2)) + units[index];
+			// 			}
+
+// 			function getFileModifyTime(timestamp) {
+// 				if (timestamp < sevenDaysAgoTimestamp) {
+// 					return "7天前";
+// 				} else {
+// 					var date = new Date(timestamp);
+// 					return date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日" +
+// 						" " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+// 				}
+// 			}
+
+
+			// 			function initStorage() {
+			// 				var storageState = /*[[@{/getStorageState}]]*/ '';
+			// 
+			// 				$.ajax({
+			// 					url: storageState,
+			// 					method: "GET",
+			// 					data: {
+			// 						uid: 1
+			// 					},
+			// 					dataType: "json",
+			// 					success: function(state) {
+			// 						console.log("used = " + state.used + "\ttotal = " + state.total);
+			// 
+			// 						var msg = getFileSize(state.used) + "/" + getFileSize(state.total);
+			// 
+			// 						var span = document.getElementById("label-span");
+			// 						span.innerHTML = msg;
+			// 						// $("#label-span").innerHTML = msg;
+			// 						// console.log($("#label-span"))
+			// 
+			// 						var d = ((state.used / state.total) * 100).toFixed(2);
+			// 						var bar = document.getElementById("storage-progressbar");
+			// 						bar.style.width = d + "%";
+			// 					},
+			// 					error: function() {
+			// 						alert("error")
+			// 					}
+			// 				})
+			// 
+			// 
+			// 
+			// 
+			// 			}
+			// 
+			// 
+
+			function getPath() {
+				var path = file_path_list[0];
+				for (let i = 1; i < file_path_list.length; i++) {
+					path += "/" + file_path_list[i];
+				}
+				return path;
+			}
+
+			// 
+			// 			function initFilePathOl() {
+			// 				var file_path_ol = $("#file-path-ol");
+			// 				file_path_ol.empty();
+			// 
+			// 				file_path_ol.append($('<li><a href="javascript:;" onclick="backTo()">返回上级</a></li>'));
+			// 				file_path_ol.append($('<li>&nbsp;|&nbsp;</li>'))
+			// 
+			// 				for (let i = 0; i < file_path_list.length; i++) {
+			// 					var index = i + 1;
+			// 					var item = $('<li class="breadcrumb-item"><a href="javascript:;" onclick="clickFilePath(' + index + ')">' +
+			// 						file_path_list[i] + '</a></li>');
+			// 					file_path_ol.append(item);
+			// 				}
+			// 			}
+
+			function clickFilePath(index) {
+				if (index >= 0 && index < file_path_list.length) {
+					file_path_list = file_path_list.slice(0, index);
+				}
+				refreshTable();
+
+			}
+
+			function backTo() {
+				var length = file_path_list.length;
+				if (length > 1) {
+					file_path_list = file_path_list.slice(0, file_path_list.length - 1);
+					refreshTable();
+				} else {
+					alert("已经到达根目录！");
+				}
+			}
+
+			// 			function refreshTable() {
+			// 				initFilePathOl();
+			// 				var path = getPath();
+			// 				var url = /*[[@{/getFileList}]]*/ '';
+			// 				console.log("click   path = " + path);
+			// 				$("#file-table-body").load(url, {
+			// 					path: path
+			// 				}, function(msg) {
+			// 					setFileList(msg)
+			// 				});
+			// 			}
+
+			function createHref(href) {
+				var a = document.createElement("a");
+				a.href = href;
+				return a;
+			}
+		</script>
+
+	</body>
+</html>
